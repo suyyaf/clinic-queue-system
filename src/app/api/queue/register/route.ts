@@ -1,0 +1,61 @@
+import { NextRequest, NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getTodayDate } from "@/lib/queue";
+import { getNextQueueNumber } from "@/lib/queue-server";
+import { z } from "zod";
+
+const schema = z.object({
+  name: z.string().min(1).max(100),
+  phone: z.string().min(7).max(20),
+  doctorId: z.string().optional(),
+});
+
+export async function POST(req: NextRequest) {
+  const body = await req.json();
+  const parsed = schema.safeParse(body);
+
+  if (!parsed.success) {
+    return NextResponse.json({ error: "Invalid input" }, { status: 400 });
+  }
+
+  const { name, phone, doctorId } = parsed.data;
+  const date = getTodayDate();
+
+  // Prevent duplicate registration on same day with same phone
+  const existing = await prisma.queueEntry.findFirst({
+    where: {
+      patientPhone: phone,
+      date,
+      status: { in: ["waiting", "called", "in_progress"] },
+    },
+  });
+
+  if (existing) {
+    return NextResponse.json(
+      {
+        error: "This phone number already has an active queue entry today",
+        queueNumber: existing.queueNumber,
+        status: existing.status,
+      },
+      { status: 409 }
+    );
+  }
+
+  const queueNumber = await getNextQueueNumber();
+
+  const entry = await prisma.queueEntry.create({
+    data: {
+      queueNumber,
+      patientName: name.trim(),
+      patientPhone: phone.trim(),
+      assignedToId: doctorId || null,
+      date,
+    },
+  });
+
+  return NextResponse.json({
+    queueNumber: entry.queueNumber,
+    id: entry.id,
+    patientName: entry.patientName,
+  });
+}

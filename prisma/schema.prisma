@@ -1,0 +1,66 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      String   @default("reception") // admin | reception | doctor
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  doctorProfile DoctorProfile?
+  sessions      Session[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model DoctorProfile {
+  id         String @id @default(cuid())
+  userId     String @unique
+  specialty  String @default("")
+  roomNumber String @default("")
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  queueEntries QueueEntry[]
+}
+
+model QueueEntry {
+  id           String    @id @default(cuid())
+  queueNumber  Int
+  patientName  String
+  patientPhone String
+  status       String    @default("waiting") // waiting | called | in_progress | done | no_show
+  assignedToId String?
+  notes        String    @default("")
+  notifiedAt   DateTime?
+  calledAt     DateTime?
+  doneAt       DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  date         String // YYYY-MM-DD
+
+  assignedTo DoctorProfile? @relation(fields: [assignedToId], references: [id])
+}
+
+model DailyCounter {
+  id      String @id @default(cuid())
+  date    String @unique // YYYY-MM-DD
+  counter Int    @default(0)
+}
