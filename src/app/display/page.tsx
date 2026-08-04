@@ -15,10 +15,13 @@ export default function DisplayPage() {
   const [called, setCalled] = useState<CalledEntry[]>([]);
   const [waitingCount, setWaitingCount] = useState(0);
   const [time, setTime] = useState("");
+  const [date, setDate] = useState("");
 
   useEffect(() => {
     function tick() {
-      setTime(new Date().toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" }));
+      const now = new Date();
+      setTime(now.toLocaleTimeString("en-MY", { hour: "2-digit", minute: "2-digit" }));
+      setDate(now.toLocaleDateString("en-MY", { weekday: "long", day: "numeric", month: "long" }));
     }
     tick();
     const t = setInterval(tick, 1000);
@@ -38,76 +41,77 @@ export default function DisplayPage() {
   }, []);
 
   const current = called[0];
-  const recent = called.slice(1);
+  const recent = called.slice(1, 4);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-900 to-blue-700 text-white flex flex-col p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-2xl font-bold">Queue Display</h1>
-          <p className="text-blue-200 text-sm">Please listen for your number</p>
+    <div className="min-h-screen bg-gray-950 text-white flex flex-col select-none overflow-hidden">
+      {/* Top bar */}
+      <div className="flex items-center justify-between px-8 pt-6 pb-4">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center">
+            <span className="text-white text-sm font-black">CQ</span>
+          </div>
+          <div>
+            <p className="font-black text-white text-lg leading-none">Clinic Queue</p>
+            <p className="text-gray-500 text-xs mt-0.5">{date}</p>
+          </div>
         </div>
         <div className="text-right">
-          <div className="text-3xl font-mono font-bold">{time}</div>
-          <div className="text-blue-200 text-sm">{waitingCount} waiting</div>
+          <div className="text-4xl font-black text-white tabular-nums">{time}</div>
+          <div className="text-gray-500 text-xs mt-0.5">{waitingCount} patient{waitingCount !== 1 ? "s" : ""} waiting</div>
         </div>
       </div>
 
-      {/* Now Serving */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-8">
-        <div className="text-center">
-          <p className="text-blue-200 text-lg uppercase tracking-widest font-medium mb-4">
+      <div className="flex-1 flex flex-col lg:flex-row gap-0">
+        {/* Main — Now Serving */}
+        <div className="flex-1 flex flex-col items-center justify-center px-8 py-6">
+          <p className="text-xs font-black text-indigo-400 uppercase tracking-[0.3em] mb-6">
             Now Serving
           </p>
+
           {current ? (
-            <div className="space-y-3">
-              <div className="text-[8rem] font-black leading-none tabular-nums text-white drop-shadow-lg">
+            <div className="text-center space-y-3">
+              <div className="text-[12vw] lg:text-[10rem] font-black leading-none tabular-nums text-white">
                 #{formatQueueNumber(current.queueNumber)}
               </div>
-              <p className="text-2xl text-blue-100">{current.patientName}</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-300">{current.patientName}</p>
               {current.assignedTo && (
-                <p className="text-blue-300">
+                <div className="inline-flex items-center gap-2 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 px-4 py-2 rounded-full text-sm font-semibold">
                   Dr. {current.assignedTo.user.name}
                   {current.assignedTo.roomNumber && ` · Room ${current.assignedTo.roomNumber}`}
-                </p>
+                </div>
               )}
             </div>
           ) : (
-            <div className="text-4xl font-bold text-blue-300">—</div>
+            <div className="text-center">
+              <div className="text-[8rem] font-black text-gray-800 leading-none">—</div>
+              <p className="text-gray-600 text-lg mt-2">No patient called yet</p>
+            </div>
           )}
         </div>
 
-        {/* Recently called */}
+        {/* Sidebar — Also Called */}
         {recent.length > 0 && (
-          <div className="w-full max-w-lg">
-            <p className="text-blue-300 text-sm uppercase tracking-wide mb-3 text-center">
-              Also Called
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {recent.map((e) => (
-                <div
-                  key={e.id}
-                  className="bg-white/10 rounded-xl p-4 text-center"
-                >
-                  <div className="text-3xl font-bold tabular-nums">
-                    #{formatQueueNumber(e.queueNumber)}
-                  </div>
-                  {e.assignedTo && (
-                    <p className="text-blue-200 text-xs mt-1">
-                      Dr. {e.assignedTo.user.name}
-                    </p>
-                  )}
+          <div className="lg:w-64 border-t lg:border-t-0 lg:border-l border-gray-800 px-6 py-6 flex flex-col gap-3">
+            <p className="text-xs font-black text-gray-600 uppercase tracking-widest mb-1">Also Called</p>
+            {recent.map((e) => (
+              <div key={e.id} className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <div className="text-3xl font-black tabular-nums text-gray-300">
+                  #{formatQueueNumber(e.queueNumber)}
                 </div>
-              ))}
-            </div>
+                {e.assignedTo && (
+                  <p className="text-xs text-gray-600 mt-1">Dr. {e.assignedTo.user.name}</p>
+                )}
+              </div>
+            ))}
           </div>
         )}
       </div>
 
-      <p className="text-center text-blue-300 text-sm mt-8">
-        Please proceed to the consultation room when your number is called.
-      </p>
+      {/* Footer */}
+      <div className="text-center py-4 border-t border-gray-900">
+        <p className="text-gray-700 text-xs">Please proceed to the consultation room when your number is called</p>
+      </div>
     </div>
   );
 }

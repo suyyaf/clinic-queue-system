@@ -1,36 +1,111 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Clinic Queue System
 
-## Getting Started
+A real-time patient queue management system for clinics — letting reception staff register patients, doctors call the next patient, and patients check their own status on a self-service kiosk or display board.
 
-First, run the development server:
+> Live: https://clinic-queue-system-theta.vercel.app
+
+---
+
+## Features
+
+### Admin
+- Manage user accounts (create, activate/deactivate staff and doctors)
+- View system-wide queue statistics
+
+### Reception
+- Register patients into the queue (name, phone number, preferred doctor)
+- View and filter the full queue by date and doctor
+- Manually update queue entry status
+
+### Doctor
+- See their own patient queue filtered by assignment
+- Call the next patient with one click (previous patient is automatically marked done)
+- Patient is notified via SMS when called (optional Twilio integration)
+
+### Patient (Kiosk / Self-service)
+- Register into the queue at the kiosk without logging in
+- Look up queue position and status by phone number
+- View the live display board (TV screen) showing currently called patients
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Framework | Next.js 15 (App Router) |
+| Language | TypeScript 5 |
+| Database | PostgreSQL via Supabase |
+| ORM | Prisma 7 + `@prisma/adapter-pg` |
+| Auth | Custom session auth — httpOnly cookies, bcrypt password hashing |
+| Validation | Zod |
+| UI | Tailwind CSS v4, shadcn/ui, Sonner toasts |
+| SMS | Twilio (optional) |
+| Deployment | Vercel |
+
+---
+
+## Local Setup
 
 ```bash
+# 1. Clone the repository
+git clone https://github.com/your-username/clinic-queue-system.git
+cd clinic-queue-system
+
+# 2. Install dependencies
+npm install
+
+# 3. Copy and fill in environment variables
+cp .env.example .env
+# Edit .env — see the Environment Variables section below
+
+# 4. Run database migrations
+npx prisma migrate dev
+
+# 5. Seed default accounts
+npm run seed
+
+# 6. Start the development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Default Dev Accounts
 
-## Learn More
+These accounts are created by `npm run seed`. Change passwords before going to production.
 
-To learn more about Next.js, take a look at the following resources:
+| Role | Email | Password |
+|---|---|---|
+| Admin | admin@clinic.com | admin123 |
+| Reception | reception@clinic.com | reception123 |
+| Doctor (Dr. Ali Hassan) | dr.ali@clinic.com | doctor123 |
+| Doctor (Dr. Siti Rahimah) | dr.siti@clinic.com | doctor123 |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+The application is designed to be deployed on **Vercel** with **Supabase** as the PostgreSQL host.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+1. Create a Supabase project and obtain the connection strings (pooled `DATABASE_URL` and direct `DIRECT_URL`).
+2. Push the schema: `npx prisma migrate deploy`
+3. Run the seed on the remote database if needed.
+4. Create a new Vercel project, link the repository, and add the environment variables listed below.
+5. Vercel builds and deploys automatically on every push to `main`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## Environment Variables
+
+| Variable | Required | Description |
+|---|---|---|
+| `DATABASE_URL` | Yes | Supabase pooled connection string (used by Prisma at runtime) |
+| `DIRECT_URL` | Yes | Supabase direct connection string (used for migrations) |
+| `NEXTAUTH_SECRET` | Yes | Random secret used to sign session tokens (generate with `openssl rand -hex 32`) |
+| `NEXTAUTH_URL` | Yes | The canonical URL of the deployment, e.g. `https://your-app.vercel.app` |
+| `TWILIO_ACCOUNT_SID` | No | Twilio account SID — enables SMS notifications when patients are called |
+| `TWILIO_AUTH_TOKEN` | No | Twilio auth token |
+| `TWILIO_PHONE_NUMBER` | No | Your Twilio sender phone number in E.164 format, e.g. `+601XXXXXXXX` |

@@ -4,8 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import StaffNav from "@/components/StaffNav";
 import QueueCard, { QueueEntryData } from "@/components/QueueCard";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
+import { formatQueueNumber } from "@/lib/queue";
 import { toast } from "sonner";
 
 type Doctor = { id: string; user: { name: string } };
@@ -16,7 +15,7 @@ export default function ReceptionPage() {
   const [user, setUser] = useState<AuthUser>(null);
   const [entries, setEntries] = useState<QueueEntryData[]>([]);
   const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [filter, setFilter] = useState<string>("active");
+  const [filter, setFilter] = useState<"active" | "done" | "all">("active");
   const [doctorFilter, setDoctorFilter] = useState<string>("");
   const [loading, setLoading] = useState(true);
 
@@ -24,11 +23,8 @@ export default function ReceptionPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
-        if (!d.user || !["reception", "admin"].includes(d.user.role)) {
-          router.push("/login");
-        } else {
-          setUser(d.user);
-        }
+        if (!d.user || !["reception", "admin"].includes(d.user.role)) router.push("/login");
+        else setUser(d.user);
       });
     fetch("/api/doctors")
       .then((r) => r.json())
@@ -56,7 +52,6 @@ export default function ReceptionPage() {
     if (!name) return;
     const phone = prompt("Phone number:");
     if (!phone) return;
-
     const res = await fetch("/api/queue/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -64,12 +59,16 @@ export default function ReceptionPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      toast.success(`Registered — Queue #${String(data.queueNumber).padStart(3, "0")}`);
+      toast.success(`Registered — Queue #${formatQueueNumber(data.queueNumber)}`);
       loadQueue();
     } else {
       toast.error(data.error);
     }
   }
+
+  const waiting = entries.filter((e) => e.status === "waiting");
+  const inProgress = entries.filter((e) => ["called", "in_progress"].includes(e.status));
+  const done = entries.filter((e) => ["done", "no_show"].includes(e.status));
 
   const filtered = entries.filter((e) => {
     if (filter === "active") return ["waiting", "called", "in_progress"].includes(e.status);
@@ -77,44 +76,43 @@ export default function ReceptionPage() {
     return true;
   });
 
-  const waitingCount = entries.filter((e) => e.status === "waiting").length;
-  const calledCount = entries.filter((e) => ["called", "in_progress"].includes(e.status)).length;
-  const doneCount = entries.filter((e) => ["done", "no_show"].includes(e.status)).length;
-
   if (!user) return null;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <StaffNav userName={user.name} role={user.role} />
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-5">
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-4">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl p-4 text-center border">
-            <div className="text-2xl font-bold text-blue-600">{waitingCount}</div>
-            <div className="text-xs text-gray-500 mt-1">Waiting</div>
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 shadow-sm">
+            <div className="text-3xl font-black text-indigo-600">{waiting.length}</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Waiting</div>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center border">
-            <div className="text-2xl font-bold text-yellow-600">{calledCount}</div>
-            <div className="text-xs text-gray-500 mt-1">In Progress</div>
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 shadow-sm">
+            <div className="text-3xl font-black text-amber-500">{inProgress.length}</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">In Progress</div>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center border">
-            <div className="text-2xl font-bold text-green-600">{doneCount}</div>
-            <div className="text-xs text-gray-500 mt-1">Done Today</div>
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 shadow-sm">
+            <div className="text-3xl font-black text-emerald-500">{done.length}</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Done</div>
           </div>
         </div>
 
-        {/* Controls */}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button onClick={handleRegisterWalkIn} size="sm">
-            + Walk-in Patient
-          </Button>
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleRegisterWalkIn}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors"
+          >
+            + Walk-in
+          </button>
 
           {doctors.length > 0 && (
             <select
               value={doctorFilter}
               onChange={(e) => setDoctorFilter(e.target.value)}
-              className="border rounded-md px-3 py-1.5 text-sm bg-white"
+              className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400"
             >
               <option value="">All Doctors</option>
               <option value="unassigned">Unassigned</option>
@@ -124,13 +122,13 @@ export default function ReceptionPage() {
             </select>
           )}
 
-          <div className="flex gap-1 ml-auto">
-            {["active", "done", "all"].map((f) => (
+          <div className="flex gap-1 ml-auto bg-gray-100 rounded-xl p-1">
+            {(["active", "done", "all"] as const).map((f) => (
               <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-3 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
-                  filter === f ? "bg-blue-100 text-blue-700" : "text-gray-500 hover:bg-gray-100"
+                className={`px-3 py-1 rounded-lg text-xs font-bold capitalize transition-colors ${
+                  filter === f ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 {f}
@@ -139,23 +137,20 @@ export default function ReceptionPage() {
           </div>
         </div>
 
-        {/* Queue */}
+        {/* Queue list */}
         {loading ? (
-          <div className="text-center py-12 text-gray-400">Loading…</div>
+          <div className="text-center py-16 text-gray-300 text-sm">Loading…</div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            {filter === "active" ? "No active patients right now." : "No entries found."}
+          <div className="text-center py-16">
+            <p className="text-4xl mb-3">✓</p>
+            <p className="font-bold text-gray-400">
+              {filter === "active" ? "No active patients" : "No entries found"}
+            </p>
           </div>
         ) : (
           <div className="space-y-3">
             {filtered.map((entry) => (
-              <QueueCard
-                key={entry.id}
-                entry={entry}
-                role="reception"
-                doctors={doctors}
-                onUpdate={loadQueue}
-              />
+              <QueueCard key={entry.id} entry={entry} role="reception" doctors={doctors} onUpdate={loadQueue} />
             ))}
           </div>
         )}

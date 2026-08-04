@@ -1,7 +1,6 @@
 "use client";
 
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { formatQueueNumber, STATUS_LABELS, STATUS_COLORS } from "@/lib/queue";
 import { toast } from "sonner";
 
@@ -14,6 +13,7 @@ export interface QueueEntryData {
   assignedTo?: { id: string; user: { name: string }; roomNumber: string } | null;
   notes?: string;
   notifiedAt?: string | null;
+  calledAt?: string | null;
 }
 
 interface Props {
@@ -61,88 +61,121 @@ export default function QueueCard({ entry, role, doctors = [], onUpdate }: Props
   }
 
   const isActive = ["waiting", "called", "in_progress"].includes(entry.status);
+  const isCalled = entry.status === "called" || entry.status === "in_progress";
+  const isDone = ["done", "no_show"].includes(entry.status);
 
   return (
-    <div className={`bg-white rounded-xl border p-4 space-y-3 transition-all ${entry.status === "called" ? "border-yellow-300 shadow-md" : ""}`}>
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl font-bold text-blue-600 tabular-nums">
-            #{formatQueueNumber(entry.queueNumber)}
-          </span>
-          <Badge className={`${STATUS_COLORS[entry.status]} text-xs`}>
-            {STATUS_LABELS[entry.status]}
-          </Badge>
-        </div>
-        {entry.notifiedAt && (
-          <span className="text-xs text-gray-400">SMS sent</span>
-        )}
-      </div>
-
-      <div>
-        <p className="font-medium text-gray-900">{entry.patientName}</p>
-        <p className="text-sm text-gray-500">{entry.patientPhone}</p>
-        {entry.assignedTo && (
-          <p className="text-xs text-gray-400 mt-1">
-            Dr. {entry.assignedTo.user.name}
-            {entry.assignedTo.roomNumber && ` · Room ${entry.assignedTo.roomNumber}`}
-          </p>
-        )}
-      </div>
-
-      {/* Reception: assign doctor */}
-      {role === "reception" && doctors.length > 0 && isActive && (
-        <select
-          value={entry.assignedTo?.id || ""}
-          onChange={(e) => assignDoctor(e.target.value)}
-          className="w-full border rounded-md px-2 py-1.5 text-xs bg-white"
-        >
-          <option value="">Unassigned</option>
-          {doctors.map((d) => (
-            <option key={d.id} value={d.id}>Dr. {d.user.name}</option>
-          ))}
-        </select>
-      )}
-
-      {/* Actions */}
-      {isActive && (
-        <div className="flex flex-wrap gap-2">
-          {role === "reception" && entry.status === "waiting" && (
-            <Button size="sm" variant="outline" onClick={() => updateStatus("called")}>
-              Call
-            </Button>
+    <div className={`bg-white rounded-2xl border transition-all ${
+      isCalled ? "border-indigo-300 shadow-md shadow-indigo-100 ring-1 ring-indigo-200" :
+      isDone ? "border-gray-100 opacity-60" :
+      "border-gray-100 shadow-sm"
+    }`}>
+      <div className="p-4">
+        {/* Top row */}
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className={`text-2xl font-black tabular-nums leading-none ${
+              isCalled ? "text-indigo-600" : isDone ? "text-gray-400" : "text-gray-900"
+            }`}>
+              #{formatQueueNumber(entry.queueNumber)}
+            </div>
+            <Badge className={`${STATUS_COLORS[entry.status]} font-semibold text-xs`}>
+              {STATUS_LABELS[entry.status]}
+            </Badge>
+          </div>
+          {entry.notifiedAt && (
+            <span className="text-xs text-gray-300 shrink-0">SMS ✓</span>
           )}
-          {role === "reception" && (
-            <>
-              {entry.status === "called" && (
-                <Button size="sm" variant="outline" onClick={() => updateStatus("in_progress")}>
-                  In Progress
-                </Button>
-              )}
-              <Button size="sm" variant="outline" className="text-red-600" onClick={() => updateStatus("no_show")}>
+        </div>
+
+        {/* Patient info */}
+        <div className="mt-2">
+          <p className="font-bold text-gray-900">{entry.patientName}</p>
+          <p className="text-sm text-gray-400">{entry.patientPhone}</p>
+          {entry.assignedTo && (
+            <p className="text-xs text-indigo-500 mt-1 font-medium">
+              Dr. {entry.assignedTo.user.name}
+              {entry.assignedTo.roomNumber && ` · Room ${entry.assignedTo.roomNumber}`}
+            </p>
+          )}
+        </div>
+
+        {/* Doctor assignment (reception) */}
+        {role === "reception" && doctors.length > 0 && isActive && (
+          <select
+            value={entry.assignedTo?.id || ""}
+            onChange={(e) => assignDoctor(e.target.value)}
+            className="mt-3 w-full border border-gray-200 rounded-xl px-3 py-2 text-xs bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          >
+            <option value="">Unassigned</option>
+            {doctors.map((d) => (
+              <option key={d.id} value={d.id}>Dr. {d.user.name}</option>
+            ))}
+          </select>
+        )}
+
+        {/* Actions */}
+        {isActive && (
+          <div className="flex flex-wrap gap-2 mt-3 pt-3 border-t border-gray-50">
+            {role === "reception" && entry.status === "waiting" && (
+              <button
+                onClick={() => updateStatus("called")}
+                className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-lg transition-colors"
+              >
+                Call
+              </button>
+            )}
+            {role === "reception" && entry.status === "called" && (
+              <button
+                onClick={() => updateStatus("in_progress")}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors"
+              >
+                In Progress
+              </button>
+            )}
+            {role === "reception" && (
+              <>
+                <button
+                  onClick={() => updateStatus("done")}
+                  className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-bold rounded-lg transition-colors"
+                >
+                  Done
+                </button>
+                <button
+                  onClick={() => updateStatus("no_show")}
+                  className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors"
+                >
+                  No Show
+                </button>
+              </>
+            )}
+            {role === "doctor" && entry.status === "in_progress" && (
+              <button
+                onClick={() => updateStatus("done")}
+                className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg transition-colors"
+              >
+                Mark Done
+              </button>
+            )}
+            {role === "doctor" && entry.status === "waiting" && (
+              <button
+                onClick={() => updateStatus("no_show")}
+                className="px-3 py-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors"
+              >
                 No Show
-              </Button>
-              <Button size="sm" variant="outline" onClick={() => updateStatus("done")}>
-                Done
-              </Button>
-            </>
-          )}
-          {(entry.status === "called" || entry.status === "in_progress") && (
-            <Button size="sm" variant="ghost" onClick={resendNotification} className="text-xs">
-              Resend SMS
-            </Button>
-          )}
-          {role === "doctor" && entry.status === "in_progress" && (
-            <Button size="sm" variant="outline" onClick={() => updateStatus("done")}>
-              Mark Done
-            </Button>
-          )}
-          {role === "doctor" && entry.status === "waiting" && (
-            <Button size="sm" variant="outline" className="text-orange-600" onClick={() => updateStatus("no_show")}>
-              No Show
-            </Button>
-          )}
-        </div>
-      )}
+              </button>
+            )}
+            {isCalled && (
+              <button
+                onClick={resendNotification}
+                className="px-3 py-1.5 bg-gray-50 hover:bg-gray-100 text-gray-500 text-xs font-medium rounded-lg transition-colors"
+              >
+                Resend SMS
+              </button>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

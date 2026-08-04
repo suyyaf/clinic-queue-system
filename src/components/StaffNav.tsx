@@ -24,6 +24,12 @@ const navLinks: Record<string, { href: string; label: string; short: string }[]>
   ],
 };
 
+const ROLE_BADGE: Record<string, string> = {
+  admin: "bg-violet-100 text-violet-700",
+  reception: "bg-blue-100 text-blue-700",
+  doctor: "bg-emerald-100 text-emerald-700",
+};
+
 export default function StaffNav({ userName, role }: Props) {
   const router = useRouter();
   const pathname = usePathname();
@@ -37,21 +43,22 @@ export default function StaffNav({ userName, role }: Props) {
   const links = navLinks[role] || [];
 
   return (
-    <header className="bg-white border-b sticky top-0 z-10">
-      <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-4">
-        <div className="flex items-center gap-4 overflow-x-auto">
-          <span className="font-semibold text-gray-900 whitespace-nowrap text-sm">
-            Clinic Queue
-          </span>
-          <nav className="flex items-center gap-1">
+    <header className="bg-white border-b border-gray-100 sticky top-0 z-10 shadow-sm">
+      <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+        {/* Brand + nav */}
+        <div className="flex items-center gap-1 min-w-0">
+          <div className="w-7 h-7 bg-indigo-600 rounded-lg flex items-center justify-center shrink-0 mr-2">
+            <span className="text-white text-xs font-black">CQ</span>
+          </div>
+          <nav className="flex items-center">
             {links.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
-                className={`px-3 py-1.5 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
+                className={`px-3 py-1.5 rounded-lg text-sm font-semibold transition-colors whitespace-nowrap ${
                   pathname === l.href
-                    ? "bg-blue-100 text-blue-700"
-                    : "text-gray-600 hover:bg-gray-100"
+                    ? "bg-indigo-600 text-white"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 <span className="hidden sm:inline">{l.label}</span>
@@ -60,11 +67,16 @@ export default function StaffNav({ userName, role }: Props) {
             ))}
           </nav>
         </div>
-        <div className="flex items-center gap-3 shrink-0">
-          <span className="text-xs text-gray-500 hidden sm:block">{userName}</span>
+
+        {/* User + logout */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={`hidden sm:inline-flex items-center px-2 py-0.5 rounded-md text-xs font-semibold capitalize ${ROLE_BADGE[role] ?? "bg-gray-100 text-gray-600"}`}>
+            {role}
+          </span>
+          <span className="text-sm text-gray-600 font-medium hidden md:block max-w-32 truncate">{userName}</span>
           <button
             onClick={handleLogout}
-            className="text-xs text-gray-500 hover:text-red-600 transition-colors"
+            className="text-xs text-gray-400 hover:text-red-500 font-medium transition-colors border border-gray-200 hover:border-red-200 rounded-lg px-2.5 py-1.5"
           >
             Logout
           </button>

@@ -3,17 +3,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import StaffNav from "@/components/StaffNav";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "sonner";
 
-const ROLE_COLORS: Record<string, string> = {
-  admin: "bg-purple-100 text-purple-700",
+const ROLE_BADGE: Record<string, string> = {
+  admin: "bg-violet-100 text-violet-700",
   reception: "bg-blue-100 text-blue-700",
-  doctor: "bg-green-100 text-green-700",
+  doctor: "bg-emerald-100 text-emerald-700",
+};
+
+const ROLE_ICON: Record<string, string> = {
+  admin: "👑",
+  reception: "🖥️",
+  doctor: "🩺",
 };
 
 interface UserData {
@@ -46,11 +50,8 @@ export default function AdminPage() {
     fetch("/api/auth/me")
       .then((r) => r.json())
       .then((d) => {
-        if (!d.user || d.user.role !== "admin") {
-          router.push("/login");
-        } else {
-          setAuthUser(d.user);
-        }
+        if (!d.user || d.user.role !== "admin") router.push("/login");
+        else setAuthUser(d.user);
       });
   }, [router]);
 
@@ -101,126 +102,150 @@ export default function AdminPage() {
 
   if (!authUser) return null;
 
-  const docCount = users.filter((u) => u.role === "doctor" && u.active).length;
-  const staffCount = users.filter((u) => u.active).length;
+  const activeUsers = users.filter((u) => u.active);
+  const doctorCount = users.filter((u) => u.role === "doctor" && u.active).length;
+  const inactiveCount = users.filter((u) => !u.active).length;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <StaffNav userName={authUser.name} role={authUser.role} />
 
-      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-2xl mx-auto px-4 py-5 space-y-5">
         {/* Stats */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="bg-white rounded-xl p-4 text-center border">
-            <div className="text-2xl font-bold text-gray-900">{staffCount}</div>
-            <div className="text-xs text-gray-500 mt-1">Active Staff</div>
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 shadow-sm">
+            <div className="text-3xl font-black text-gray-900">{activeUsers.length}</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Active Staff</div>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center border">
-            <div className="text-2xl font-bold text-green-600">{docCount}</div>
-            <div className="text-xs text-gray-500 mt-1">Doctors</div>
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 shadow-sm">
+            <div className="text-3xl font-black text-emerald-500">{doctorCount}</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Doctors</div>
           </div>
-          <div className="bg-white rounded-xl p-4 text-center border">
-            <div className="text-2xl font-bold text-gray-400">{users.filter((u) => !u.active).length}</div>
-            <div className="text-xs text-gray-500 mt-1">Inactive</div>
+          <div className="bg-white rounded-2xl p-4 text-center border border-gray-100 shadow-sm">
+            <div className="text-3xl font-black text-gray-300">{inactiveCount}</div>
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-1">Inactive</div>
           </div>
         </div>
 
         {/* Staff list */}
         <div className="space-y-3">
           <div className="flex items-center justify-between">
-            <h2 className="font-semibold text-gray-900">Staff Accounts</h2>
-            <Button size="sm" onClick={() => setShowCreate(true)}>+ Add Staff</Button>
+            <h2 className="font-black text-gray-900 text-lg">Staff Accounts</h2>
+            <button
+              onClick={() => setShowCreate(true)}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold px-4 py-2 rounded-xl transition-colors"
+            >
+              + Add Staff
+            </button>
           </div>
 
           {users.map((u) => (
-            <div key={u.id} className={`bg-white rounded-xl border p-4 flex items-center justify-between gap-4 ${!u.active ? "opacity-50" : ""}`}>
+            <div
+              key={u.id}
+              className={`bg-white rounded-2xl border border-gray-100 shadow-sm p-4 flex items-center gap-4 transition-opacity ${!u.active ? "opacity-40" : ""}`}
+            >
+              <div className="w-11 h-11 bg-gray-50 rounded-xl flex items-center justify-center text-xl shrink-0 border border-gray-100">
+                {ROLE_ICON[u.role] ?? "👤"}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium text-gray-900">{u.name}</p>
-                  <Badge className={`${ROLE_COLORS[u.role]} text-xs capitalize`}>{u.role}</Badge>
-                  {!u.active && <Badge variant="outline" className="text-xs text-gray-400">Inactive</Badge>}
+                  <p className="font-bold text-gray-900">{u.name}</p>
+                  <span className={`text-xs font-bold px-2 py-0.5 rounded-full capitalize ${ROLE_BADGE[u.role] ?? "bg-gray-100 text-gray-600"}`}>
+                    {u.role}
+                  </span>
+                  {!u.active && (
+                    <span className="text-xs text-gray-300 font-medium">Inactive</span>
+                  )}
                 </div>
-                <p className="text-sm text-gray-500 truncate">{u.email}</p>
+                <p className="text-sm text-gray-400 truncate">{u.email}</p>
                 {u.doctorProfile && (
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {u.doctorProfile.specialty && `${u.doctorProfile.specialty} · `}
-                    {u.doctorProfile.roomNumber && `Room ${u.doctorProfile.roomNumber}`}
+                    {[u.doctorProfile.specialty, u.doctorProfile.roomNumber && `Room ${u.doctorProfile.roomNumber}`]
+                      .filter(Boolean).join(" · ")}
                   </p>
                 )}
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
+              <button
                 onClick={() => toggleActive(u)}
-                className={u.active ? "text-red-500 hover:text-red-700" : "text-green-600"}
+                className={`shrink-0 text-xs font-bold px-3 py-1.5 rounded-lg border transition-colors ${
+                  u.active
+                    ? "border-red-100 text-red-500 hover:bg-red-50"
+                    : "border-emerald-100 text-emerald-600 hover:bg-emerald-50"
+                }`}
               >
                 {u.active ? "Deactivate" : "Activate"}
-              </Button>
+              </button>
             </div>
           ))}
         </div>
 
         {/* Quick links */}
-        <div className="bg-white rounded-xl border p-4 space-y-2">
-          <h3 className="font-semibold text-gray-700 text-sm">Quick Links</h3>
-          <div className="flex flex-wrap gap-2">
-            <a href="/reception" className="text-sm text-blue-600 hover:underline">Reception Dashboard</a>
-            <span className="text-gray-300">·</span>
-            <a href="/display" className="text-sm text-blue-600 hover:underline">Display Board</a>
-            <span className="text-gray-300">·</span>
-            <a href="/" className="text-sm text-blue-600 hover:underline">Patient Kiosk</a>
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+          <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">Quick Links</p>
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
+            {[
+              { href: "/reception", label: "Reception Dashboard" },
+              { href: "/display", label: "Display Board" },
+              { href: "/", label: "Patient Kiosk" },
+            ].map((l) => (
+              <a key={l.href} href={l.href} className="text-sm text-indigo-600 hover:text-indigo-800 font-semibold transition-colors">
+                {l.label} →
+              </a>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Create user dialog */}
       <Dialog open={showCreate} onOpenChange={setShowCreate}>
-        <DialogContent className="max-w-md mx-4">
+        <DialogContent className="max-w-sm mx-4 rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Add Staff Account</DialogTitle>
+            <DialogTitle className="font-black text-gray-900">Add Staff Account</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleCreate} className="space-y-4">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="col-span-2 space-y-2">
-                <Label>Full Name</Label>
-                <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Email</Label>
-                <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Password</Label>
-                <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} required />
-              </div>
-              <div className="col-span-2 space-y-2">
-                <Label>Role</Label>
-                <select
-                  value={form.role}
-                  onChange={(e) => setForm({ ...form, role: e.target.value as "admin" | "reception" | "doctor" })}
-                  className="w-full border rounded-md px-3 py-2 text-sm bg-white"
-                >
-                  <option value="reception">Reception</option>
-                  <option value="doctor">Doctor</option>
-                  <option value="admin">Admin</option>
-                </select>
-              </div>
-              {form.role === "doctor" && (
-                <>
-                  <div className="space-y-2">
-                    <Label>Specialty</Label>
-                    <Input value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })} placeholder="General" />
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Room No.</Label>
-                    <Input value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} placeholder="101" />
-                  </div>
-                </>
-              )}
+          <form onSubmit={handleCreate} className="space-y-3 mt-1">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-gray-700">Full Name</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="rounded-xl" required />
             </div>
-            <div className="flex gap-2 justify-end">
-              <Button type="button" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-              <Button type="submit" disabled={creating}>{creating ? "Creating…" : "Create Account"}</Button>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-gray-700">Email</Label>
+              <Input type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="rounded-xl" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-gray-700">Password</Label>
+              <Input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} minLength={6} className="rounded-xl" required />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-semibold text-gray-700">Role</Label>
+              <select
+                value={form.role}
+                onChange={(e) => setForm({ ...form, role: e.target.value as typeof form.role })}
+                className="w-full border border-input rounded-xl px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              >
+                <option value="reception">Reception</option>
+                <option value="doctor">Doctor</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            {form.role === "doctor" && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold text-gray-700">Specialty</Label>
+                  <Input value={form.specialty} onChange={(e) => setForm({ ...form, specialty: e.target.value })} placeholder="General" className="rounded-xl" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm font-semibold text-gray-700">Room No.</Label>
+                  <Input value={form.roomNumber} onChange={(e) => setForm({ ...form, roomNumber: e.target.value })} placeholder="101" className="rounded-xl" />
+                </div>
+              </div>
+            )}
+            <div className="flex gap-2 pt-1">
+              <button type="button" onClick={() => setShowCreate(false)} className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-600 hover:bg-gray-50 transition-colors">
+                Cancel
+              </button>
+              <button type="submit" disabled={creating} className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white text-sm font-bold transition-colors">
+                {creating ? "Creating…" : "Create"}
+              </button>
             </div>
           </form>
         </DialogContent>

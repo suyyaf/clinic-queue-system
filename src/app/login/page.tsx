@@ -2,10 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 
 export default function LoginPage() {
@@ -28,7 +26,6 @@ export default function LoginPage() {
         toast.error(data.error || "Login failed");
         return;
       }
-      toast.success(`Welcome, ${data.name}`);
       if (data.role === "admin") router.push("/admin");
       else if (data.role === "doctor") router.push("/doctor");
       else router.push("/reception");
@@ -38,47 +35,55 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white flex items-center justify-center p-4">
-      <div className="w-full max-w-sm space-y-4">
-        <div className="text-center space-y-1">
-          <h1 className="text-2xl font-bold text-gray-900">Staff Login</h1>
-          <p className="text-gray-500 text-sm">Clinic Queue System</p>
+    <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-sm">
+        {/* Logo area */}
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+            <span className="text-3xl">🏥</span>
+          </div>
+          <h1 className="text-2xl font-black text-white">Staff Login</h1>
+          <p className="text-indigo-200 text-sm mt-1">Clinic Queue System</p>
         </div>
 
-        <Card>
-          <CardContent className="pt-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="doctor@clinic.com"
-                  required
-                  autoFocus
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? "Signing in…" : "Sign In"}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+        <div className="bg-white rounded-2xl shadow-2xl p-6 space-y-4">
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div className="space-y-2">
+              <Label className="font-semibold text-gray-700 text-sm">Email</Label>
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="h-11 rounded-xl"
+                required
+                autoFocus
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="font-semibold text-gray-700 text-sm">Password</Label>
+              <Input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="h-11 rounded-xl"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white font-bold py-3 rounded-xl transition-colors mt-1"
+            >
+              {loading ? "Signing in…" : "Sign In"}
+            </button>
+          </form>
+        </div>
 
-        <div className="text-center">
-          <a href="/" className="text-sm text-gray-400 hover:text-gray-600">← Back to patient kiosk</a>
+        <div className="text-center mt-4">
+          <a href="/" className="text-sm text-indigo-200 hover:text-white transition-colors">
+            ← Back to patient kiosk
+          </a>
         </div>
       </div>
     </div>

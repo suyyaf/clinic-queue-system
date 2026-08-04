@@ -51,5 +51,6 @@ next-env.d.ts
 # claude/windsurf/agents internal files
 .agents/
 .windsurf/
+.claude/
 skills-lock.json
 memory/
