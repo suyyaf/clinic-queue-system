@@ -19,6 +19,11 @@ type LookupResult = {
 
 type View = "home" | "register" | "lookup" | "registered";
 
+type QueueStatus = {
+  nowServing: { queueNumber: number; assignedTo?: { roomNumber: string; user: { name: string } } | null } | null;
+  waitingCount: number;
+};
+
 export default function PatientPage() {
   const [view, setView] = useState<View>("home");
   const [doctors, setDoctors] = useState<Doctor[]>([]);
@@ -30,11 +35,24 @@ export default function PatientPage() {
   const [lookupPhone, setLookupPhone] = useState("");
   const [lookupResult, setLookupResult] = useState<LookupResult>(null);
   const [lookupDone, setLookupDone] = useState(false);
+  const [queueStatus, setQueueStatus] = useState<QueueStatus>({ nowServing: null, waitingCount: 0 });
 
   useEffect(() => {
     fetch("/api/doctors")
       .then((r) => r.json())
       .then((d) => setDoctors(d.doctors || []));
+  }, []);
+
+  useEffect(() => {
+    function loadStatus() {
+      fetch("/api/display")
+        .then((r) => r.json())
+        .then((d) => setQueueStatus({ nowServing: d.called?.[0] ?? null, waitingCount: d.waitingCount ?? 0 }))
+        .catch(() => {});
+    }
+    loadStatus();
+    const interval = setInterval(loadStatus, 10000);
+    return () => clearInterval(interval);
   }, []);
 
   async function handleRegister(e: React.FormEvent) {
@@ -146,6 +164,40 @@ export default function PatientPage() {
       <div className="flex-1 bg-gray-50 rounded-t-3xl px-5 pt-6 pb-8">
         {view === "home" && (
           <div className="space-y-3 max-w-md mx-auto">
+            {/* Live queue status */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-1">
+              <div className="flex items-stretch divide-x divide-gray-100">
+                <div className="flex-1 px-5 py-4 text-center">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Now Serving</p>
+                  {queueStatus.nowServing ? (
+                    <>
+                      <p className="text-4xl font-black text-indigo-600 tabular-nums leading-none">
+                        #{formatQueueNumber(queueStatus.nowServing.queueNumber)}
+                      </p>
+                      {queueStatus.nowServing.assignedTo && (
+                        <p className="text-xs text-gray-400 mt-1.5 truncate">
+                          {queueStatus.nowServing.assignedTo.roomNumber
+                            ? `Room ${queueStatus.nowServing.assignedTo.roomNumber}`
+                            : `Dr. ${queueStatus.nowServing.assignedTo.user.name}`}
+                        </p>
+                      )}
+                    </>
+                  ) : (
+                    <p className="text-2xl font-black text-gray-200 leading-none mt-1">—</p>
+                  )}
+                </div>
+                <div className="flex-1 px-5 py-4 text-center">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Waiting</p>
+                  <p className={`text-4xl font-black tabular-nums leading-none ${queueStatus.waitingCount > 0 ? "text-amber-500" : "text-gray-200"}`}>
+                    {queueStatus.waitingCount}
+                  </p>
+                  <p className="text-xs text-gray-400 mt-1.5">
+                    {queueStatus.waitingCount === 1 ? "patient" : "patients"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <button
               onClick={() => setView("register")}
               className="w-full bg-white rounded-2xl p-5 flex items-center gap-4 shadow-sm hover:shadow-md active:scale-[0.98] transition-all text-left"
