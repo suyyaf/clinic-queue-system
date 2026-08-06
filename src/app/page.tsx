@@ -176,9 +176,8 @@ export default function PatientPage() {
                       </p>
                       {queueStatus.nowServing.assignedTo && (
                         <p className="text-xs text-gray-400 mt-1.5 truncate">
-                          {queueStatus.nowServing.assignedTo.roomNumber
-                            ? `Room ${queueStatus.nowServing.assignedTo.roomNumber}`
-                            : `Dr. ${queueStatus.nowServing.assignedTo.user.name}`}
+                          Dr. {queueStatus.nowServing.assignedTo.user.name}
+                          {queueStatus.nowServing.assignedTo.roomNumber && ` · Room ${queueStatus.nowServing.assignedTo.roomNumber}`}
                         </p>
                       )}
                     </>
