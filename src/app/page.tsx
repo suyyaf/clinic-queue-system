@@ -62,11 +62,10 @@ export default function PatientPage() {
     }
   }
 
-  async function handleLookup(e: React.FormEvent) {
-    e.preventDefault();
+  async function performLookup(phone: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/queue/lookup?phone=${encodeURIComponent(lookupPhone)}`);
+      const res = await fetch(`/api/queue/lookup?phone=${encodeURIComponent(phone)}`);
       const data = await res.json();
       setLookupResult(data.entry);
       setLookupDone(true);
@@ -74,6 +73,18 @@ export default function PatientPage() {
       setLoading(false);
     }
   }
+
+  async function handleLookup(e: React.FormEvent) {
+    e.preventDefault();
+    await performLookup(lookupPhone);
+  }
+
+  useEffect(() => {
+    if (!lookupDone || !lookupResult || lookupResult.status !== "waiting") return;
+    const interval = setInterval(() => performLookup(lookupPhone), 30000);
+    return () => clearInterval(interval);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lookupDone, lookupResult?.status, lookupPhone]);
 
   function reset() {
     setView("home");
@@ -109,7 +120,7 @@ export default function PatientPage() {
           </div>
           <div className="space-y-2">
             <button
-              onClick={() => { setView("lookup"); setLookupPhone(phone); }}
+              onClick={() => { setView("lookup"); setLookupPhone(phone); performLookup(phone); }}
               className="w-full bg-white/20 hover:bg-white/30 text-white font-semibold py-3 rounded-2xl transition-colors"
             >
               Check My Position

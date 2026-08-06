@@ -4,6 +4,7 @@ import { getTodayDate } from "@/lib/queue";
 import { getNextQueueNumber } from "@/lib/queue-server";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendSms } from "@/lib/sms";
 
 const schema = z.object({
   name: z.string().min(1).max(100),
@@ -61,6 +62,12 @@ export async function POST(req: NextRequest) {
       date,
     },
   });
+
+  const queueStr = String(entry.queueNumber).padStart(3, "0");
+  sendSms({
+    to: entry.patientPhone,
+    message: `Hi ${entry.patientName}, you are registered at the clinic. Your queue number is #${queueStr}. We will SMS you when it's your turn.`,
+  }).catch(() => {});
 
   return NextResponse.json({
     queueNumber: entry.queueNumber,

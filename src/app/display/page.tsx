@@ -74,7 +74,7 @@ export default function DisplayPage() {
               <div className="text-[12vw] lg:text-[10rem] font-black leading-none tabular-nums text-white">
                 #{formatQueueNumber(current.queueNumber)}
               </div>
-              <p className="text-2xl lg:text-3xl font-bold text-gray-300">{current.patientName}</p>
+              <p className="text-2xl lg:text-3xl font-bold text-gray-300">{current.patientName.split(" ")[0]}</p>
               {current.assignedTo && (
                 <div className="inline-flex items-center gap-2 bg-indigo-600/20 border border-indigo-500/30 text-indigo-300 px-4 py-2 rounded-full text-sm font-semibold">
                   Dr. {current.assignedTo.user.name}
