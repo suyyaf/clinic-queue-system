@@ -62,7 +62,9 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (authUser) loadUsers();
+    if (!authUser) return;
+    const timeout = setTimeout(loadUsers, 0);
+    return () => clearTimeout(timeout);
   }, [authUser, loadUsers]);
 
   async function handleCreate(e: React.FormEvent) {

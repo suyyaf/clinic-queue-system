@@ -130,10 +130,10 @@ export default function PatientPage() {
             </div>
             <div className="border-t pt-4 space-y-1">
               <p className="font-semibold text-gray-900">{registered.patientName}</p>
-              <p className="text-sm text-gray-400">Please wait — we'll call your number</p>
+              <p className="text-sm text-gray-400">Please wait — we&apos;ll call your number</p>
             </div>
             <div className="bg-indigo-50 rounded-xl p-3 text-sm text-indigo-700 font-medium">
-              You'll receive an SMS when it's your turn
+              You&apos;ll receive an SMS when it&apos;s your turn
             </div>
           </div>
           <div className="space-y-2">

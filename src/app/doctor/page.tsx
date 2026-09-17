@@ -34,9 +34,12 @@ export default function DoctorPage() {
 
   useEffect(() => {
     if (!user) return;
-    loadQueue();
+    const initial = setTimeout(loadQueue, 0);
     const interval = setInterval(loadQueue, 10000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
   }, [user, loadQueue]);
 
   async function callNextPatient() {

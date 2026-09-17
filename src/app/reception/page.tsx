@@ -49,9 +49,12 @@ export default function ReceptionPage() {
   }, [user, doctorFilter]);
 
   useEffect(() => {
-    loadQueue();
+    const initial = setTimeout(loadQueue, 0);
     const interval = setInterval(loadQueue, 15000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(initial);
+      clearInterval(interval);
+    };
   }, [loadQueue]);
 
   async function handleRegisterWalkIn(e: React.FormEvent) {

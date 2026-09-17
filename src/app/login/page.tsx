@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
@@ -81,9 +82,9 @@ export default function LoginPage() {
         </div>
 
         <div className="text-center mt-4">
-          <a href="/" className="text-sm text-indigo-200 hover:text-white transition-colors">
+          <Link href="/" className="text-sm text-indigo-200 hover:text-white transition-colors">
             ← Back to patient kiosk
-          </a>
+          </Link>
         </div>
       </div>
     </div>
