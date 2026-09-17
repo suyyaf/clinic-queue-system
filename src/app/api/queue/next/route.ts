@@ -12,37 +12,50 @@ export async function POST() {
 
   const date = getTodayDate();
 
-  // Mark any in_progress as done first
-  await prisma.queueEntry.updateMany({
-    where: {
-      assignedToId: user.doctorProfileId,
-      date,
-      status: "in_progress",
-    },
-    data: { status: "done", doneAt: new Date() },
+  // Claim the next waiting patient atomically: a conditional update (status
+  // still "waiting") inside a transaction means a concurrent call from a
+  // second tab/click will block on the row lock and then see the row is no
+  // longer "waiting", so only one request can ever claim a given patient.
+  const claimedId = await prisma.$transaction(async (tx) => {
+    await tx.queueEntry.updateMany({
+      where: {
+        assignedToId: user.doctorProfileId,
+        date,
+        status: "in_progress",
+      },
+      data: { status: "done", doneAt: new Date() },
+    });
+
+    const next = await tx.queueEntry.findFirst({
+      where: {
+        assignedToId: user.doctorProfileId || null,
+        date,
+        status: "waiting",
+      },
+      orderBy: { queueNumber: "asc" },
+    });
+
+    if (!next) return null;
+
+    const claim = await tx.queueEntry.updateMany({
+      where: { id: next.id, status: "waiting" },
+      data: { status: "called", calledAt: new Date(), notifiedAt: new Date() },
+    });
+
+    return claim.count === 1 ? next.id : null;
   });
 
-  const next = await prisma.queueEntry.findFirst({
-    where: {
-      assignedToId: user.doctorProfileId || null,
-      date,
-      status: "waiting",
-    },
-    orderBy: { queueNumber: "asc" },
-  });
-
-  if (!next) {
+  if (!claimedId) {
     return NextResponse.json({ entry: null, message: "No more patients in queue" });
   }
 
-  const message = buildQueueMessage(next.patientName, next.queueNumber, "called");
-  await sendSms({ to: next.patientPhone, message });
-
-  const updated = await prisma.queueEntry.update({
-    where: { id: next.id },
-    data: { status: "called", calledAt: new Date(), notifiedAt: new Date() },
+  const updated = await prisma.queueEntry.findUniqueOrThrow({
+    where: { id: claimedId },
     include: { assignedTo: { include: { user: true } } },
   });
+
+  const message = buildQueueMessage(updated.patientName, updated.queueNumber, "called");
+  await sendSms({ to: updated.patientPhone, message });
 
   return NextResponse.json({ entry: updated });
 }

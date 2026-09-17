@@ -14,7 +14,7 @@ const schema = z.object({
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
-  if (!rateLimit(`register:${ip}`, 20, 60 * 60 * 1000)) {
+  if (!(await rateLimit(`register:${ip}`, 20, 60 * 60 * 1000))) {
     return NextResponse.json(
       { error: "Too many attempts, try again later" },
       { status: 429 }

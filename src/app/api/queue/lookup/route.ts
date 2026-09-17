@@ -1,8 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getTodayDate } from "@/lib/queue";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function GET(req: NextRequest) {
+  const ip = req.headers.get("x-forwarded-for") ?? "127.0.0.1";
+  if (!(await rateLimit(`lookup:${ip}`, 30, 15 * 60 * 1000))) {
+    return NextResponse.json(
+      { error: "Too many attempts, try again later" },
+      { status: 429 }
+    );
+  }
+
   const phone = req.nextUrl.searchParams.get("phone");
   if (!phone) {
     return NextResponse.json({ error: "Phone required" }, { status: 400 });

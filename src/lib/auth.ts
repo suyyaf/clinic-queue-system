@@ -1,6 +1,7 @@
 import { prisma } from "./prisma";
 import bcrypt from "bcryptjs";
 import { cookies } from "next/headers";
+import { randomBytes } from "crypto";
 
 export type Role = "admin" | "reception" | "doctor";
 
@@ -21,10 +22,7 @@ export async function verifyPassword(password: string, hash: string) {
 }
 
 export async function createSession(userId: string): Promise<string> {
-  const token =
-    Math.random().toString(36).substring(2) +
-    Math.random().toString(36).substring(2) +
-    Date.now().toString(36);
+  const token = randomBytes(32).toString("hex");
 
   const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 

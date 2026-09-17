@@ -56,10 +56,19 @@ model QueueEntry {
   date         String // YYYY-MM-DD
 
   assignedTo DoctorProfile? @relation(fields: [assignedToId], references: [id])
+
+  @@index([date, status, assignedToId, queueNumber])
+  @@index([patientPhone, date])
 }
 
 model DailyCounter {
   id      String @id @default(cuid())
   date    String @unique // YYYY-MM-DD
   counter Int    @default(0)
+}
+
+model RateLimitHit {
+  key     String   @id
+  count   Int      @default(1)
+  resetAt DateTime
 }
