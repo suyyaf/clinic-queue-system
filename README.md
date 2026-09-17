@@ -33,7 +33,7 @@ A real-time patient queue management system for clinics — letting reception st
 
 | Layer | Technology |
 |---|---|
-| Framework | Next.js 15 (App Router) |
+| Framework | Next.js 16 (App Router) |
 | Language | TypeScript 5 |
 | Database | PostgreSQL via Supabase |
 | ORM | Prisma 7 + `@prisma/adapter-pg` |
@@ -109,3 +109,9 @@ The application is designed to be deployed on **Vercel** with **Supabase** as th
 | `TWILIO_ACCOUNT_SID` | No | Twilio account SID — enables SMS notifications when patients are called |
 | `TWILIO_AUTH_TOKEN` | No | Twilio auth token |
 | `TWILIO_PHONE_NUMBER` | No | Your Twilio sender phone number in E.164 format, e.g. `+601XXXXXXXX` |
+
+---
+
+## CI
+
+`.github/workflows/supabase-keepalive.yml` pings the database daily so the Supabase free-tier project doesn't auto-pause after 7 days of inactivity. Add `DATABASE_URL` as a **GitHub Actions repo secret** (Settings → Secrets and variables → Actions) — separate from the Vercel environment variables above, since Actions can't read those.
